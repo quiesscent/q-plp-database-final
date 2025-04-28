@@ -7,7 +7,6 @@ import api from './api';
 import MessageResponse from './interfaces/MessageResponse';
 // import authenticateUser from './auth.middlware';
 import session from 'express-session';
-
 const app = express();
 
 app.use(morgan('dev'));
