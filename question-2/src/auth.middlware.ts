@@ -1,47 +1,39 @@
-// import { Request, Response, NextFunction } from "express";
-// import jwt from "jsonwebtoken";
+import jwt from 'jsonwebtoken';
+import { JwtPayload } from 'jsonwebtoken';
 
-// export const authenticateUser = (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction,
-// ) => {
-//   const token = req.headers.authorization?.split(" ")[1]; // Extract token
-//   if (!token) return res.status(401).json({ error: "Unauthorized" });
+const secretKey = 'your-secret-key'; // Replace with a secure key
 
-//   try {
-//     const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
-//       id: number;
-//       email: string;
-//     };
-//     req.user = decoded; // Attach user to req
-//     next();
-//   } catch (error) {
-//     return res.status(401).json({ error: "Invalid token" });
-//   }
-// };
+export interface CustomJwtPayload extends JwtPayload {
+  userId: number; // Assuming the userId is a string. Adjust the type if needed.
+}
 
-// export default authenticateUser;
+// Function to generate JWT token
+export const generateToken = (userId: number) => {
+  return jwt.sign({"userId":userId }, secretKey, { expiresIn: '1h' });
+};
 
-// // src/middleware/sessionMiddleware.ts
-
-import { Request, Response, NextFunction } from 'express';
-
-export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  if (req.session.user) {
-    return next(); // User is authenticated, proceed
+// Function to verify JWT token
+export const verifyToken = (token: string) => {
+  try {
+    return jwt.verify(token, secretKey);
+  } catch (error) {
+    return null;
   }
-  res.status(401).send('You need to log in first');
 };
 
-export const setSessionUser = (req: Request, user: { id: number; username: string }) => {
-  req.session.user = user; // Store user in session
-};
+export const authenticateJWT = (req: any, res: any, next: any) => {
+  const token = req.headers['authorization']?.split(' ')[1];
 
-export const clearSessionUser = (req: Request) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return req.status(500).send('Failed to log out');
-    }
-  });
+  if (!token) {
+    return res.status(403).send('A token is required for authentication');
+  }
+
+  const decoded = verifyToken(token);
+
+  if (!decoded) {
+    return res.status(401).send('Invalid or expired token');
+  }
+
+  req.user = decoded;
+  next();
 };
